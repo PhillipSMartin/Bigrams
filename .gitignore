@@ -20,9 +20,8 @@ build/
 *.swo
 
 # Project specific
-*.txt
+# *.txt
 !requirements.txt
-!all-chorales-clean.txt
 
 # Logs and databases
 *.log
