@@ -1,7 +1,24 @@
+#from matplotlib import pyplot as plt
 import torch
 
+def print_stats(_N):
+    # sum each row to get the number of times each token appears in the corpus
+    sum_N = _N.sum(dim=1)
+    # sort the values in descending order, retaining only the frequency, not the token ids
+    sorted_values = sum_N.sort()[0]  
+
+    # print some statistics
+    print(f'Number of singular tokens: {(sum_N == 1).sum().item()}')
+    print(f'Count of twenty most common tokens: {sorted_values[-20:].tolist()}')
+
+    # commented out - table is too sparse for pyplot to show anything
+    # plt.figure(figsize=(16,16))
+    # plt.imshow(torch.log(N + 1), cmap='Blues')
+    # plt.show()
+
+
 # create a list of all chorales
-with open('all-chorales-chords-noeom.txt', 'r') as file:
+with open('all-chorales-SB-start-of-beat.txt', 'r') as file:
     chorales = (file.read()
         .splitlines())
 
@@ -10,7 +27,7 @@ with open('all-chorales-chords-noeom.txt', 'r') as file:
     all_tokens = file.read().split()
     vocabulary = set(all_tokens)
     print(f"All tokens: {len(all_tokens)}")
-    print(f"Unique tokens: {len(vocabulary)}")
+    print(f"Unique tokens: {len(vocabulary)} ({len(vocabulary) / len(all_tokens) * 100:.2f}%)")
 
 # change tokens from a set to a list and sort it alphabetically
 # the index of a token into this list will be the token identifier
@@ -18,6 +35,7 @@ vocabulary = sorted(list(vocabulary))
 vocabulary.remove('.') # we want to ensure the identifer for '.' is 0
 stoi = {s:i+1 for i, s in enumerate(vocabulary)}
 stoi['.'] = 0
+
 # create a reverse lookup table
 itos = {i:s for s, i in stoi.items()}
 
@@ -36,10 +54,21 @@ for c in chorales:
         ix2 = stoi[t2]
         N[ix1, ix2] += 1
 
-sum_N = N.sum(dim=1)
-sorted_values = sum_N.sort()[0]  # sort the values
+print_stats(N)
 
-print(f'Number of singular tokens: {(sum_N == 1).sum().item()}')
-print(f'Counf of twenty most common tokens: {sorted_values[-20:].tolist()}')
+# # compute the probability of each token's being followed by another token
+# p = N / N.sum(dim=1, keepdim=True)
 
+# # the multinomial function samples values from a list representing a probability distribution
+# # it returns the index into the list at the specified probability
+# # for example, if p = [0.1, 0.9] and we sample 10 times, we will get, on average, 9 ones and 1 zero
+# g = torch.Generator().manual_seed(2147483647)
+
+# # generate a chorale:
+# ix = 0
+# while True:
+#     ix = torch.multinomial(p[ix], 1, replacement=True, generator=g).item()
+#     print(itos[ix])
+#     if ix == 0:
+#         break
 
