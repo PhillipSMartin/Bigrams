@@ -147,19 +147,44 @@ itos = {i:s for s, i in stoi.items()}
 
 # build the bigram count matrix
 N = build_N(chorales, vocabulary, stoi)
+sum_N = N.sum()
 print_stats(N)
 
 # compute the probability of each token's being followed by another token
-# dim = 1 means we are summing each column producing an n x 1 tensor 
-#  (if keepdim is False (the default), the summed-up dimension is squeezed out producing a n-element tensor)
-#  The division is possible because of broadcasting rules:
+# dim = 1 means we are summing across columns, producing a sum for each row and  yielding an n x 1 tensor 
+#    (if keepdim is False (the default), the summed-up dimension is squeezed out producing a n-element tensor)
+# The division is possible because of broadcasting rules:
+#    Align the dimensions starting at the right
 #    Each dimension must be equal or one must be a 1 or one must not exist
-P = N / N.sum(dim=1, keepdim=True)
-
-# generate a chorale
+N = N.float()
+N /= N.sum(dim=1, keepdim=True)
 g = torch.Generator().manual_seed(2147483647)
-chorale = generate_chorale(P, itos, g) 
 
-for token in chorale:
-    print(token)
+done = False
+while not done:
+    action = ''
+    while action not in ['g', 'l', 'q']:
+        action = input("Generate a chorale (g) or print log likelihood (l) or quit (q)? ").lower()
+
+    if action == 'q':
+        done = True
+
+    elif action == 'g':
+        # generate a chorale
+        chorale = generate_chorale(N, itos, g) 
+        for token in chorale:
+            print(token)
+
+    elif action == 'l':
+        # print the log likelihood of the corpus
+        log_likelihood = 0.0
+        n = 0
+        for c in chorales:
+            tokens = c.split()
+            for t1, t2 in zip(tokens, tokens[1:]):
+                n += 1
+                ix1 = stoi[t1]
+                ix2 = stoi[t2]
+                log_likelihood += torch.log(N[ix1, ix2])
+        print(f"Normalized negative log likelihood of corpus: {-log_likelihood/ n:.3f}")
 
